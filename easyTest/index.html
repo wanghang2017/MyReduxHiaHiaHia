@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <div id="root">
+        <button class="add">+</button>
+        <span class="first"></span>
+        <button class="minus">-</button>
+        <span class="second"></span>
+    </div>
+    <script>
+        // 其实就是个发布订阅，真的没啥
+        //参数是reducer  没人反对吧？ 改变state的规则得由我们定，redux只是帮我们统一管理状态
+        function createStore(reducer){
+            // 所谓状态管理 首先得维护个状态吧
+            var state ;
+            // 这个是用来存放订阅得函数的
+            var listeners = [];
+            // 既然维护了状态，我们总得有获取状态得渠道吧
+            function getState(){
+                return state;
+            }
+            // 订阅
+            function subscribe(fn){
+                console.log(fn);
+                listeners.push(fn);
+                // 返回一个方法，为您以后取消订阅留条后路
+                return function(l){
+                    listeners=listeners.filter(fn=>fn!=l);
+                }
+            }
+            // 发布  这里要带上action喔
+            function dispatch(action){
+                // 二话不说，先改状态
+                state =reducer(state,action);
+                console.log(state);
+                // 然后把监听的函数 执行 （联想一下react 我们更新视图是不是要setState()，同时更新多个组件，就得把它们的setState 都放进listeners 喔）
+                listeners.map(fn=>fn());
+            }
+            // 我们还得手动执行一下 dispactch，为啥呢？ 老师说这样可以初始化一下state 免得以后会报错
+            dispatch({});
+            return {
+                getState,
+                subscribe,
+                dispatch
+            }
+        }
+
+        // 好了，redux 写完了 我们该用一下了
+        var root = document.getElementById("root");
+        // 强行定义一个actionType 用来装逼
+        var actionType  = {
+            ADD:"ADD",
+            MINUSE:"MINUS"
+        };
+
+
+
+        //  然后定义一个 rudcer
+        function reducer(state,action){
+            state = state?state:{value:0};
+            console.log(state);
+            switch(action.type){
+                case actionType.ADD:
+                    value = state.value+action.amount;
+                    return {...state,value};
+                case actionType.MINUSE:
+                    value = state.value-action.amount;
+                    return {...state,value};
+            }
+            return state;
+        }
+        // 生成一个store  用一下咱们写的最简单版本的redux
+        var store = createStore(reducer);
+        
+        // 假设它是两个组件吧  = = 我知道这个很勉强，但是。。。这特们我写的代码，你特么不服来揍我啊
+        var first = document.querySelector(".first");
+        var second = document.querySelector(".second");
+
+        // 好了，该定义两个更新视图的方法了
+        function updateFirst(){
+            console.log(store.getState());
+            first.innerHTML = store.getState().value;
+        }
+        function updateSecond(){
+            second.innerHTML = store.getState().value;
+        }
+
+
+        // 然后监听一下子
+        store.subscribe(updateFirst);
+        store.subscribe(updateSecond);
+        
+
+        var btnAdd = document.querySelector(".add");
+        var btnMinus = document.querySelector(".minus");
+
+        // 然后点击事件触发一下子
+        btnAdd.onclick = function(){
+            store.dispatch({
+                type:actionType.ADD,
+                amount:1
+            });
+        }
+
+        btnMinus.onclick = function(){
+            store.dispatch({
+                type:actionType.MINUSE,
+                amount:5
+            })
+        }
+        
+
+        //  这明明是一个很简单的操作，为什么写得这么复杂？？？？  嘿嘿，咱们这不是 在学redux嘛，所以就装装逼咯
+    </script>
+</body>
+</html>
